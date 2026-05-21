@@ -50,10 +50,21 @@ TUI keys:
 
 ## Install
 
+With Go:
+
 ```sh
 go install github.com/artpar/atm@latest
 atm
 ```
+
+Without Go, download the archive for your OS/architecture from
+[GitHub Releases](https://github.com/artpar/atm/releases).
+
+Linux users can also install release packages from the same page:
+
+- `.deb`
+- `.rpm`
+- `.apk`
 
 Known agents today:
 
@@ -77,4 +88,5 @@ go run .
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the current design and
-[docs/ROADMAP.md](docs/ROADMAP.md) for planned work.
+[docs/ROADMAP.md](docs/ROADMAP.md) for planned work. See
+[docs/RELEASE.md](docs/RELEASE.md) for release and packaging details.

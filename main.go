@@ -17,7 +17,11 @@ import (
 	"time"
 )
 
-const version = "0.1.0"
+var (
+	version = "dev"
+	commit  = "unknown"
+	date    = "unknown"
+)
 
 type AgentProcess struct {
 	ID           string    `json:"id"`
@@ -89,7 +93,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 	case "inspect":
 		return runInspect(args[1:], stdout)
 	case "version":
-		fmt.Fprintf(stdout, "atm %s\n", version)
+		fmt.Fprintf(stdout, "atm %s (%s, %s)\n", version, commit, date)
 		return nil
 	case "help", "-h", "--help":
 		printUsage(stdout)

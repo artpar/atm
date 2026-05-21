@@ -1,0 +1,74 @@
+version: 2
+
+project_name: atm
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: atm
+    main: .
+    binary: atm
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .CommitDate }}
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: atm
+    ids:
+      - atm
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - docs/*
+
+nfpms:
+  - id: linux-packages
+    ids:
+      - atm
+    package_name: atm
+    file_name_template: "{{ .ConventionalFileName }}"
+    homepage: https://github.com/artpar/atm
+    maintainer: Parth Mudgal <artpar@gmail.com>
+    description: Terminal task manager for local coding agents.
+    license: MIT
+    bindir: /usr/bin
+    formats:
+      - deb
+      - rpm
+      - apk
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+
+release:
+  github:
+    owner: artpar
+    name: atm
