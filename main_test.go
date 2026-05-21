@@ -57,56 +57,38 @@ func TestDetectShellScriptAgent(t *testing.T) {
 }
 
 func TestSummarizeCodexLine(t *testing.T) {
-	line := `{"type":"response_item","payload":{"type":"function_call","name":"exec_command"}}`
-	if got := summarizeCodexLine(line); got != "tool: exec_command" {
-		t.Fatalf("unexpected summary: %q", got)
-	}
-}
-
-func TestParseCodexEventLine(t *testing.T) {
 	tests := []struct {
 		name string
 		line string
-		kind string
-		text string
+		want string
 	}{
 		{
 			name: "user",
 			line: `{"timestamp":"2026-05-21T04:00:00Z","type":"event_msg","payload":{"type":"user_message","message":"what changed?"}}`,
-			kind: "user",
-			text: "what changed?",
+			want: "user: what changed?",
 		},
 		{
 			name: "tool",
 			line: `{"timestamp":"2026-05-21T04:00:01Z","type":"response_item","payload":{"type":"function_call","name":"exec_command"}}`,
-			kind: "tool",
-			text: "exec_command",
+			want: "tool: exec_command",
 		},
 		{
 			name: "assistant",
 			line: `{"timestamp":"2026-05-21T04:00:02Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"done"}]}}`,
-			kind: "assistant",
-			text: "done",
+			want: "assistant: done",
 		},
 	}
 	for _, test := range tests {
-		event, ok := parseCodexEventLine(test.line)
-		if !ok {
-			t.Fatalf("%s: expected event", test.name)
-		}
-		if event.Kind != test.kind || event.Text != test.text {
-			t.Fatalf("%s: event = %#v", test.name, event)
-		}
-		if event.Timestamp.IsZero() {
-			t.Fatalf("%s: expected timestamp", test.name)
+		if got := summarizeCodexLine(test.line); got != test.want {
+			t.Fatalf("%s: summarizeCodexLine = %q, want %q", test.name, got, test.want)
 		}
 	}
 }
 
-func TestParseCodexEventLineIgnoresReasoning(t *testing.T) {
+func TestSummarizeCodexLineIgnoresReasoning(t *testing.T) {
 	line := `{"type":"response_item","payload":{"type":"reasoning","encrypted_content":"secret"}}`
-	if event, ok := parseCodexEventLine(line); ok {
-		t.Fatalf("expected no event, got %#v", event)
+	if got := summarizeCodexLine(line); got != "" {
+		t.Fatalf("expected no summary, got %q", got)
 	}
 }
 

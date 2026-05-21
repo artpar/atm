@@ -25,22 +25,21 @@ var (
 )
 
 type AgentProcess struct {
-	ID           string       `json:"id"`
-	Name         string       `json:"name"`
-	PID          int          `json:"pid"`
-	PPID         int          `json:"ppid"`
-	Elapsed      string       `json:"elapsed"`
-	CWD          string       `json:"cwd,omitempty"`
-	Project      string       `json:"project,omitempty"`
-	Command      string       `json:"command"`
-	Status       string       `json:"status"`
-	Health       string       `json:"health,omitempty"`
-	Source       string       `json:"source,omitempty"`
-	Activity     string       `json:"activity,omitempty"`
-	SessionID    string       `json:"session_id,omitempty"`
-	SessionPath  string       `json:"session_path,omitempty"`
-	LastActivity time.Time    `json:"last_activity,omitempty"`
-	Events       []AgentEvent `json:"-"`
+	ID           string    `json:"id"`
+	Name         string    `json:"name"`
+	PID          int       `json:"pid"`
+	PPID         int       `json:"ppid"`
+	Elapsed      string    `json:"elapsed"`
+	CWD          string    `json:"cwd,omitempty"`
+	Project      string    `json:"project,omitempty"`
+	Command      string    `json:"command"`
+	Status       string    `json:"status"`
+	Health       string    `json:"health,omitempty"`
+	Source       string    `json:"source,omitempty"`
+	Activity     string    `json:"activity,omitempty"`
+	SessionID    string    `json:"session_id,omitempty"`
+	SessionPath  string    `json:"session_path,omitempty"`
+	LastActivity time.Time `json:"last_activity,omitempty"`
 }
 
 type psProcess struct {
@@ -56,20 +55,6 @@ type codexSession struct {
 	Path     string
 	ModTime  time.Time
 	Activity string
-	Events   []AgentEvent
-}
-
-type AgentEvent struct {
-	ID        string
-	AgentID   string
-	AgentName string
-	PID       int
-	Project   string
-	CWD       string
-	Timestamp time.Time
-	Kind      string
-	Text      string
-	Source    string
 }
 
 type detector struct {
@@ -444,29 +429,16 @@ func loadCodexSessionActivity(session *codexSession) {
 	if offset > 0 {
 		start = 1
 	}
-	const maxEvents = 20
-	events := make([]AgentEvent, 0, maxEvents)
 	for i := len(lines) - 1; i >= start; i-- {
 		line := strings.TrimSpace(lines[i])
 		if line == "" {
 			continue
 		}
-		event, ok := parseCodexEventLine(line)
-		if !ok {
-			continue
-		}
-		if session.Activity == "" {
-			session.Activity = compact(event.Kind + ": " + event.Text)
-		}
-		events = append(events, event)
-		if len(events) >= maxEvents {
+		if activity := summarizeCodexLine(line); activity != "" {
+			session.Activity = activity
 			break
 		}
 	}
-	for i, j := 0, len(events)-1; i < j; i, j = i+1, j-1 {
-		events[i], events[j] = events[j], events[i]
-	}
-	session.Events = events
 }
 
 func readCodexMeta(line string, session *codexSession) {
@@ -485,27 +457,17 @@ func readCodexMeta(line string, session *codexSession) {
 }
 
 func summarizeCodexLine(line string) string {
-	event, ok := parseCodexEventLine(line)
-	if !ok {
+	if strings.Contains(line, `"type":"reasoning"`) || strings.Contains(line, `"encrypted_content"`) {
 		return ""
 	}
-	return compact(event.Kind + ": " + event.Text)
-}
-
-func parseCodexEventLine(line string) (AgentEvent, bool) {
-	if strings.Contains(line, `"type":"reasoning"`) || strings.Contains(line, `"encrypted_content"`) {
-		return AgentEvent{}, false
-	}
 	var row struct {
-		Timestamp string          `json:"timestamp"`
-		Type      string          `json:"type"`
-		Payload   json.RawMessage `json:"payload"`
+		Type    string          `json:"type"`
+		Payload json.RawMessage `json:"payload"`
 	}
 	if json.Unmarshal([]byte(line), &row) != nil {
-		return AgentEvent{}, false
+		return ""
 	}
 
-	event := AgentEvent{Timestamp: parseEventTime(row.Timestamp)}
 	switch row.Type {
 	case "event_msg":
 		var event struct {
@@ -513,7 +475,7 @@ func parseCodexEventLine(line string) (AgentEvent, bool) {
 			Message string `json:"message"`
 		}
 		if json.Unmarshal(row.Payload, &event) == nil && event.Message != "" {
-			return AgentEvent{Timestamp: parseEventTime(row.Timestamp), Kind: "user", Text: event.Message, Source: "codex session"}, true
+			return compact("user: " + event.Message)
 		}
 	case "response_item":
 		var item struct {
@@ -526,37 +488,24 @@ func parseCodexEventLine(line string) (AgentEvent, bool) {
 			} `json:"content"`
 		}
 		if json.Unmarshal(row.Payload, &item) != nil {
-			return AgentEvent{}, false
+			return ""
 		}
 		if item.Type == "function_call" && item.Name != "" {
-			event.Kind = "tool"
-			event.Text = item.Name
-			event.Source = "codex session"
-			return event, true
+			return compact("tool: " + item.Name)
 		}
 		if item.Type == "message" {
 			for _, part := range item.Content {
 				if part.Text != "" {
-					event.Kind = item.Role
-					event.Text = part.Text
-					event.Source = "codex session"
-					return event, true
+					role := item.Role
+					if role == "" {
+						role = "message"
+					}
+					return compact(role + ": " + part.Text)
 				}
 			}
 		}
 	}
-	return AgentEvent{}, false
-}
-
-func parseEventTime(value string) time.Time {
-	if value == "" {
-		return time.Time{}
-	}
-	t, err := time.Parse(time.RFC3339Nano, value)
-	if err != nil {
-		return time.Time{}
-	}
-	return t
+	return ""
 }
 
 func enrichCodex(agent *AgentProcess, sessions []codexSession) {
@@ -580,7 +529,6 @@ func enrichCodex(agent *AgentProcess, sessions []codexSession) {
 	agent.SessionPath = best.Path
 	agent.LastActivity = best.ModTime
 	agent.Activity = best.Activity
-	agent.Events = best.Events
 }
 
 func printAgents(w io.Writer, agents []AgentProcess, jsonOut bool) error {
