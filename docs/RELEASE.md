@@ -13,7 +13,7 @@ go install github.com/artpar/atm@latest
 Users can install the latest release archive with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/artpar/atm/main/scripts/install.sh | sh
+curl -fsSL https://github.com/artpar/atm/releases/latest/download/install.sh | sh
 ```
 
 Users who do not have Go installed can download release archives from:

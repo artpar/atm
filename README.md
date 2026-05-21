@@ -31,7 +31,7 @@ go install github.com/artpar/atm@latest
 With the install script:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/artpar/atm/main/scripts/install.sh | sh
+curl -fsSL https://github.com/artpar/atm/releases/latest/download/install.sh | sh
 ```
 
 Without Go, download the archive for your OS/architecture from

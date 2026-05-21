@@ -73,3 +73,7 @@ release:
   github:
     owner: artpar
     name: atm
+  make_latest: true
+  extra_files:
+    - glob: scripts/install.sh
+      name_template: install.sh
