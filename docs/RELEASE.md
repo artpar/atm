@@ -10,6 +10,12 @@ Go users can install directly from the module:
 go install github.com/artpar/atm@latest
 ```
 
+Users can install the latest release archive with:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/artpar/atm/main/scripts/install.sh | sh
+```
+
 Users who do not have Go installed can download release archives from:
 
 ```text
@@ -47,4 +53,3 @@ The GitHub release workflow builds archives and checksums from the tag.
 
 Linux `.deb`, `.rpm`, and `.apk` packages are also built by GoReleaser through
 nFPM and attached to the GitHub release.
-

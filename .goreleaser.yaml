@@ -36,6 +36,7 @@ archives:
     files:
       - README.md
       - docs/*
+      - scripts/install.sh
 
 nfpms:
   - id: linux-packages
