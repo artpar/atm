@@ -20,41 +20,12 @@ recent `~/.codex/sessions/*.jsonl` activity.
 - Detail panel with command, cwd, PID/PPID, session path, and activity summary
 - JSON output for scripts and debugging
 
-## Usage
-
-```sh
-go run .
-go run . tui
-go run . list
-go run . list -watch 2s
-go run . list -json
-go run . inspect <pid>
-go run . inspect <pid> -json
-```
-
-Build a local binary:
-
-```sh
-go build -o bin/atm .
-./bin/atm
-```
-
-TUI keys:
-
-- `/` filter
-- `s` cycle sort
-- `r` refresh now
-- `enter` toggle details
-- `c` copy session path or command
-- `q` quit
-
 ## Install
 
 With Go:
 
 ```sh
 go install github.com/artpar/atm@latest
-atm
 ```
 
 Without Go, download the archive for your OS/architecture from
@@ -65,6 +36,27 @@ Linux users can also install release packages from the same page:
 - `.deb`
 - `.rpm`
 - `.apk`
+
+## Usage
+
+```sh
+atm
+atm tui
+atm list
+atm list -watch 2s
+atm list -json
+atm inspect <pid>
+atm inspect <pid> -json
+```
+
+TUI keys:
+
+- `/` filter
+- `s` cycle sort
+- `r` refresh now
+- `enter` toggle details
+- `c` copy session path or command
+- `q` quit
 
 Known agents today:
 
