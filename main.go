@@ -248,6 +248,13 @@ func (d detector) detect(command string) (string, bool) {
 		return name, true
 	}
 
+	if !isScriptLauncher(base) {
+		if name, ok := d.detectShellScript(base, fields); ok {
+			return name, true
+		}
+		return "", false
+	}
+
 	// Node-based CLIs often appear as `node /path/to/<agent>/bin.js`.
 	for _, field := range fields[1:] {
 		clean := strings.ToLower(filepath.Base(field))
@@ -258,6 +265,34 @@ func (d detector) detect(command string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func (d detector) detectShellScript(base string, fields []string) (string, bool) {
+	if !isShellLauncher(base) || len(fields) < 2 || strings.HasPrefix(fields[1], "-") {
+		return "", false
+	}
+	clean := strings.ToLower(filepath.Base(fields[1]))
+	clean = strings.TrimSuffix(clean, ".sh")
+	name, ok := d.agents[clean]
+	return name, ok
+}
+
+func isScriptLauncher(base string) bool {
+	switch base {
+	case "node", "bun", "deno":
+		return true
+	default:
+		return false
+	}
+}
+
+func isShellLauncher(base string) bool {
+	switch base {
+	case "sh", "bash", "zsh":
+		return true
+	default:
+		return false
+	}
 }
 
 func ps() ([]psProcess, error) {
@@ -310,21 +345,6 @@ func parsePSLine(line string) (psProcess, bool) {
 		Elapsed: parts[2],
 		Command: rest,
 	}, true
-}
-
-func cwdForPID(pid int) string {
-	out, err := exec.Command("lsof", "-a", "-p", strconv.Itoa(pid), "-d", "cwd", "-Fn").Output()
-	if err != nil {
-		return ""
-	}
-	scanner := bufio.NewScanner(strings.NewReader(string(out)))
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "n") {
-			return strings.TrimPrefix(line, "n")
-		}
-	}
-	return ""
 }
 
 func recentCodexSessions(limit int, targetCWDs map[string]bool) []codexSession {

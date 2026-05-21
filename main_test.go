@@ -36,6 +36,26 @@ func TestDetectKnownAgents(t *testing.T) {
 	}
 }
 
+func TestDetectDoesNotMatchShellArguments(t *testing.T) {
+	d := newDetector()
+	command := `sh -lc "cd /tmp/work && codex &"`
+	if got, ok := d.detect(command); ok {
+		t.Fatalf("detect(%q) = %q, want no match", command, got)
+	}
+}
+
+func TestDetectShellScriptAgent(t *testing.T) {
+	d := newDetector()
+	command := "/bin/sh /tmp/atm-smoke/bin/codex"
+	got, ok := d.detect(command)
+	if !ok {
+		t.Fatalf("expected shell script agent to be detected")
+	}
+	if got != "codex" {
+		t.Fatalf("detect(%q) = %q, want codex", command, got)
+	}
+}
+
 func TestSummarizeCodexLine(t *testing.T) {
 	line := `{"type":"response_item","payload":{"type":"function_call","name":"exec_command"}}`
 	if got := summarizeCodexLine(line); got != "tool: exec_command" {

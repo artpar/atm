@@ -6,7 +6,6 @@ agentic software.
 ## Near Term
 
 - Add deeper adapters for Claude, Aider, OpenCode, Gemini, and Cursor Agent.
-- Add Linux-native cwd discovery through `/proc/<pid>/cwd`.
 - Add CPU and memory columns without making OS resource usage the primary view.
 - Add a non-destructive "open session path" action where the local environment
   supports it.

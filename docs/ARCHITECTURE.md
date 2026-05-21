@@ -16,9 +16,8 @@ ps -axo pid=,ppid=,etime=,command=
 
 For each known agent command, ATM resolves the current working directory with:
 
-```sh
-lsof -a -p <pid> -d cwd -Fn
-```
+macOS uses `lsof -a -p <pid> -d cwd -Fn`. Linux uses the native
+`/proc/<pid>/cwd` symlink.
 
 This keeps the base view useful even when ATM does not yet understand an
 agent's private session format.
@@ -44,4 +43,3 @@ Health is derived from the latest known activity time:
 - `idle`: activity between two and fifteen minutes
 - `stale`: activity older than fifteen minutes
 - `unknown`: no adapter activity signal
-
