@@ -36,8 +36,15 @@ case "$arch" in
 esac
 
 if [ "$version" = "latest" ]; then
-  latest_url="$(curl -fsSL -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest")"
-  version="${latest_url##*/}"
+  version="$(
+    curl -fsSL -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$repo/releases/latest" |
+      sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' |
+      head -n 1
+  )"
+  if [ -z "$version" ]; then
+    echo "atm install: could not resolve latest release" >&2
+    exit 1
+  fi
 fi
 
 case "$version" in
