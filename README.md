@@ -18,6 +18,7 @@ recent `~/.codex/sessions/*.jsonl` activity.
 - Filtering across agent name, PID, project, activity, session ID, and source
 - Sort cycling by activity, agent, project, and PID
 - Detail panel with command, cwd, PID/PPID, session path, and activity summary
+- Relaxed narrative feed for recent agent activity
 - JSON output for scripts and debugging
 
 ## Install
@@ -57,11 +58,12 @@ atm inspect <pid> -json
 
 TUI keys:
 
+- `tab` switch between table and relaxed feed
 - `/` filter
 - `s` cycle sort
 - `r` refresh now
-- `enter` toggle details
-- `c` copy session path or command
+- `enter` toggle details or expand a feed event
+- `c` copy session path, command, or feed event text
 - `q` quit
 
 Known agents today:
