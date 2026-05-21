@@ -52,3 +52,13 @@ func TestParseInspectArgsAcceptsJSONAnywhere(t *testing.T) {
 		t.Fatalf("unexpected parse result: json=%v needle=%q", jsonOut, needle)
 	}
 }
+
+func TestDisplayVersionUsesInjectedVersion(t *testing.T) {
+	oldVersion := version
+	version = "v9.9.9"
+	t.Cleanup(func() { version = oldVersion })
+
+	if got := displayVersion(); got != "v9.9.9" {
+		t.Fatalf("displayVersion = %q, want v9.9.9", got)
+	}
+}

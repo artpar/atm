@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -93,7 +94,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 	case "inspect":
 		return runInspect(args[1:], stdout)
 	case "version":
-		fmt.Fprintf(stdout, "atm %s (%s, %s)\n", version, commit, date)
+		fmt.Fprintf(stdout, "atm %s (%s, %s)\n", displayVersion(), commit, date)
 		return nil
 	case "help", "-h", "--help":
 		printUsage(stdout)
@@ -101,6 +102,17 @@ func run(args []string, stdout, stderr io.Writer) error {
 	default:
 		return fmt.Errorf("unknown command %q\n\nRun `atm help` for usage.", args[0])
 	}
+}
+
+func displayVersion() string {
+	if version != "dev" {
+		return version
+	}
+	info, ok := debug.ReadBuildInfo()
+	if !ok || info.Main.Version == "" || info.Main.Version == "(devel)" {
+		return version
+	}
+	return info.Main.Version
 }
 
 func runList(args []string, stdout io.Writer) error {
