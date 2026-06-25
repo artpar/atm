@@ -202,6 +202,10 @@ func (m *tuiModel) rebuildRows() {
 			healthCell(agent.Health),
 			agent.Name,
 			strconv.Itoa(agent.PID),
+			formatCPU(agent.Usage.CPUPercent),
+			formatBytes(agent.Usage.RSSBytes),
+			formatDisk(agent.Usage),
+			formatNetwork(agent.Usage),
 			agent.Project,
 			agent.Elapsed,
 			lastActivityLabel(agent.LastActivity, m.lastRefresh),
@@ -284,6 +288,7 @@ func (m tuiModel) detailView() string {
 		fmt.Sprintf("%s %s", agent.Name, mutedStyle.Render(agent.ID)),
 		fmt.Sprintf("Status: %s | Source: %s | Last activity: %s", agent.Health, agent.Source, lastActivityLabel(agent.LastActivity, m.lastRefresh)),
 		fmt.Sprintf("PID: %d | PPID: %d | Runtime: %s", agent.PID, agent.PPID, agent.Elapsed),
+		fmt.Sprintf("CPU: %s | Memory: %s | Disk I/O: %s | Network: %s", formatCPU(agent.Usage.CPUPercent), formatBytes(agent.Usage.RSSBytes), formatDisk(agent.Usage), formatNetwork(agent.Usage)),
 		"CWD: " + valueOrDash(agent.CWD),
 		"Session: " + valueOrDash(agent.SessionID),
 		"Session path: " + valueOrDash(agent.SessionPath),
@@ -364,6 +369,10 @@ func tableColumns(width int) []table.Column {
 	statusWidth := 7
 	agentWidth := 8
 	pidWidth := 6
+	cpuWidth := 6
+	memWidth := 8
+	diskWidth := 8
+	netWidth := 8
 	projectWidth := 14
 	ageWidth := 11
 	lastWidth := 6
@@ -371,11 +380,13 @@ func tableColumns(width int) []table.Column {
 		agentWidth = 12
 		projectWidth = 22
 		lastWidth = 7
+		memWidth = 9
+		diskWidth = 9
 	}
 	if width >= 140 {
 		projectWidth = 30
 	}
-	used := statusWidth + agentWidth + pidWidth + projectWidth + ageWidth + lastWidth + 14
+	used := statusWidth + agentWidth + pidWidth + cpuWidth + memWidth + diskWidth + netWidth + projectWidth + ageWidth + lastWidth + 14
 	activityWidth := width - used
 	if activityWidth < 14 {
 		activityWidth = 14
@@ -384,6 +395,10 @@ func tableColumns(width int) []table.Column {
 		{Title: "Status", Width: statusWidth},
 		{Title: "Agent", Width: agentWidth},
 		{Title: "PID", Width: pidWidth},
+		{Title: "CPU", Width: cpuWidth},
+		{Title: "Mem", Width: memWidth},
+		{Title: "Disk", Width: diskWidth},
+		{Title: "Net", Width: netWidth},
 		{Title: "Project", Width: projectWidth},
 		{Title: "Age", Width: ageWidth},
 		{Title: "Last", Width: lastWidth},

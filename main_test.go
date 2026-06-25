@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestParsePSLine(t *testing.T) {
-	proc, ok := parsePSLine("60204 74009       02:00 codex --dangerously-bypass-approvals-and-sandbox")
+	proc, ok := parsePSLine("60204 74009       02:00 12.5 65536 codex --dangerously-bypass-approvals-and-sandbox")
 	if !ok {
 		t.Fatal("expected ps line to parse")
 	}
@@ -12,6 +12,12 @@ func TestParsePSLine(t *testing.T) {
 	}
 	if proc.Elapsed != "02:00" {
 		t.Fatalf("unexpected elapsed: %q", proc.Elapsed)
+	}
+	if proc.CPUPercent != 12.5 {
+		t.Fatalf("unexpected cpu: %v", proc.CPUPercent)
+	}
+	if proc.RSSBytes != 65536*1024 {
+		t.Fatalf("unexpected rss: %d", proc.RSSBytes)
 	}
 	if proc.Command != "codex --dangerously-bypass-approvals-and-sandbox" {
 		t.Fatalf("unexpected command: %q", proc.Command)

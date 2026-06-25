@@ -30,6 +30,7 @@ type AgentProcess struct {
 	PID          int       `json:"pid"`
 	PPID         int       `json:"ppid"`
 	Elapsed      string    `json:"elapsed"`
+	Usage        Usage     `json:"usage"`
 	CWD          string    `json:"cwd,omitempty"`
 	Project      string    `json:"project,omitempty"`
 	Command      string    `json:"command"`
@@ -43,10 +44,12 @@ type AgentProcess struct {
 }
 
 type psProcess struct {
-	PID     int
-	PPID    int
-	Elapsed string
-	Command string
+	PID        int
+	PPID       int
+	Elapsed    string
+	CPUPercent float64
+	RSSBytes   uint64
+	Command    string
 }
 
 type codexSession struct {
@@ -209,10 +212,15 @@ func discover() ([]AgentProcess, error) {
 			PID:     proc.PID,
 			PPID:    proc.PPID,
 			Elapsed: proc.Elapsed,
+			Usage: Usage{
+				CPUPercent: proc.CPUPercent,
+				RSSBytes:   proc.RSSBytes,
+			},
 			CWD:     cwd,
 			Command: proc.Command,
 			Status:  "running",
 		}
+		enrichUsage(&agent)
 		if name == "codex" {
 			codexCWDs[cwd] = true
 		}
@@ -296,7 +304,7 @@ func isShellLauncher(base string) bool {
 }
 
 func ps() ([]psProcess, error) {
-	out, err := exec.Command("ps", "-axo", "pid=,ppid=,etime=,command=").Output()
+	out, err := exec.Command("ps", "-axo", "pid=,ppid=,etime=,pcpu=,rss=,command=").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -318,7 +326,7 @@ func ps() ([]psProcess, error) {
 
 func parsePSLine(line string) (psProcess, bool) {
 	parts := strings.Fields(line)
-	if len(parts) < 4 {
+	if len(parts) < 6 {
 		return psProcess{}, false
 	}
 	pid, err := strconv.Atoi(parts[0])
@@ -329,9 +337,17 @@ func parsePSLine(line string) (psProcess, bool) {
 	if err != nil {
 		return psProcess{}, false
 	}
+	cpuPercent, err := strconv.ParseFloat(parts[3], 64)
+	if err != nil {
+		return psProcess{}, false
+	}
+	rssKB, err := strconv.ParseUint(parts[4], 10, 64)
+	if err != nil {
+		return psProcess{}, false
+	}
 
 	rest := strings.TrimSpace(line)
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 5; i++ {
 		idx := strings.IndexFunc(rest, func(r rune) bool { return r == ' ' || r == '\t' })
 		if idx < 0 {
 			return psProcess{}, false
@@ -340,10 +356,12 @@ func parsePSLine(line string) (psProcess, bool) {
 	}
 
 	return psProcess{
-		PID:     pid,
-		PPID:    ppid,
-		Elapsed: parts[2],
-		Command: rest,
+		PID:        pid,
+		PPID:       ppid,
+		Elapsed:    parts[2],
+		CPUPercent: cpuPercent,
+		RSSBytes:   rssKB * 1024,
+		Command:    rest,
 	}, true
 }
 
@@ -543,11 +561,15 @@ func printAgents(w io.Writer, agents []AgentProcess, jsonOut bool) error {
 	}
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "AGENT\tPID\tELAPSED\tCWD\tACTIVITY")
+	fmt.Fprintln(tw, "AGENT\tPID\tCPU\tMEM\tDISK\tNET\tELAPSED\tCWD\tACTIVITY")
 	for _, agent := range agents {
-		fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\n",
+		fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			agent.Name,
 			agent.PID,
+			formatCPU(agent.Usage.CPUPercent),
+			formatBytes(agent.Usage.RSSBytes),
+			formatDisk(agent.Usage),
+			formatNetwork(agent.Usage),
 			agent.Elapsed,
 			shortPath(agent.CWD),
 			agent.Activity,
@@ -562,6 +584,10 @@ func printAgentDetail(w io.Writer, agent AgentProcess) error {
 	fmt.Fprintf(w, "PPID: %d\n", agent.PPID)
 	fmt.Fprintf(w, "Status: %s\n", agent.Status)
 	fmt.Fprintf(w, "Elapsed: %s\n", agent.Elapsed)
+	fmt.Fprintf(w, "CPU: %s\n", formatCPU(agent.Usage.CPUPercent))
+	fmt.Fprintf(w, "Memory: %s\n", formatBytes(agent.Usage.RSSBytes))
+	fmt.Fprintf(w, "Disk I/O: %s\n", formatDisk(agent.Usage))
+	fmt.Fprintf(w, "Network: %s\n", formatNetwork(agent.Usage))
 	if agent.CWD != "" {
 		fmt.Fprintf(w, "CWD: %s\n", agent.CWD)
 	}

@@ -13,12 +13,19 @@ recent `~/.codex/sessions/*.jsonl` activity.
 ## Features
 
 - Live task-manager table for local agent processes
+- CPU, memory, disk I/O, and network socket usage where the OS exposes it
 - Activity health states: `active`, `idle`, `stale`, and `unknown`
 - Codex session enrichment from local JSONL session logs
 - Filtering across agent name, PID, project, activity, session ID, and source
 - Sort cycling by activity, agent, project, and PID
 - Detail panel with command, cwd, PID/PPID, session path, and activity summary
 - JSON output for scripts and debugging
+
+Resource metrics are best-effort by platform:
+
+- Linux: CPU, memory, cumulative disk I/O, and network socket counts
+- macOS: CPU, memory, and network socket counts
+- Other Unix-like systems: CPU and memory if `ps` exposes compatible fields
 
 ## Install
 

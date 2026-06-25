@@ -48,13 +48,16 @@ func TestSortAgentsByActivity(t *testing.T) {
 
 func TestFilterAgents(t *testing.T) {
 	agents := []AgentProcess{
-		{ID: "codex:1", Name: "codex", PID: 1, CWD: "/tmp/atm", Project: "atm", Activity: "tool: exec_command"},
+		{ID: "codex:1", Name: "codex", PID: 1, CWD: "/tmp/atm", Project: "atm", Activity: "tool: exec_command", Usage: Usage{CPUPercent: 4.2}},
 		{ID: "aider:2", Name: "aider", PID: 2, CWD: "/tmp/other", Project: "other", Activity: "process running"},
 	}
 	if got := filterAgents(agents, "exec"); len(got) != 1 || got[0].ID != "codex:1" {
 		t.Fatalf("filter by activity failed: %#v", got)
 	}
-	if got := filterAgents(agents, "2"); len(got) != 1 || got[0].ID != "aider:2" {
+	if got := filterAgents(agents, "aider:2"); len(got) != 1 || got[0].ID != "aider:2" {
 		t.Fatalf("filter by pid failed: %#v", got)
+	}
+	if got := filterAgents(agents, "4.2%"); len(got) != 1 || got[0].ID != "codex:1" {
+		t.Fatalf("filter by cpu failed: %#v", got)
 	}
 }
